@@ -1,8 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { AnimatePresence, motion } from "framer-motion";
+import { Check, ChevronDown } from "lucide-react";
 import optifyLogo from "@/assets/optify-logo.png";
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -54,8 +63,14 @@ const CHALLENGES = [
 const CONTACT_METHODS = ["WhatsApp", "Phone Call", "Email", "Instagram"] as const;
 type ContactMethod = (typeof CONTACT_METHODS)[number];
 
-const phoneRegex = /^[+\d][\d\s\-()]{6,20}$/;
 const handleRegex = /^@?[a-zA-Z0-9._]{2,30}$/;
+
+type CountryOption = {
+  iso2: string;
+  name: string;
+  dialCode: string;
+  shortName: string;
+};
 
 type FormState = {
   fullName: string;
@@ -65,8 +80,12 @@ type FormState = {
   challenges: (typeof CHALLENGES)[number][];
   otherChallenge: string;
   preferredContactMethod: ContactMethod | "";
+  selectedPhoneCountry: string;
+  phoneNationalNumber: string;
   contactDetail: string;
 };
+
+const DEFAULT_PHONE_COUNTRY = "SA";
 
 const EMPTY: FormState = {
   fullName: "",
@@ -76,8 +95,16 @@ const EMPTY: FormState = {
   challenges: [],
   otherChallenge: "",
   preferredContactMethod: "",
+  selectedPhoneCountry: DEFAULT_PHONE_COUNTRY,
+  phoneNationalNumber: "",
   contactDetail: "",
 };
+
+const FALLBACK_COUNTRIES: CountryOption[] = [
+  { iso2: "US", name: "United States", dialCode: "+1", shortName: "USA" },
+  { iso2: "GB", name: "United Kingdom", dialCode: "+44", shortName: "UK" },
+  { iso2: "SA", name: "Saudi Arabia", dialCode: "+966", shortName: "KSA" },
+];
 
 const TOTAL_STEPS = 5;
 
@@ -89,6 +116,43 @@ function IntakePage() {
   const [direction, setDirection] = useState<1 | -1>(1);
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [countryOptions, setCountryOptions] = useState<CountryOption[]>(FALLBACK_COUNTRIES);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("https://restcountries.com/v3.1/all?fields=name,idd,cca2,cca3", {
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Country list request failed");
+        return res.json() as Promise<
+          {
+            cca2?: string;
+            cca3?: string;
+            name?: { common?: string };
+            idd?: { root?: string; suffixes?: string[] };
+          }[]
+        >;
+      })
+      .then((rows) => {
+        const opts = rows
+          .flatMap((c) => {
+            if (!c.cca2 || !c.name?.common || !c.idd?.root || !c.idd?.suffixes?.length) return [];
+            return c.idd.suffixes.map((suffix) => ({
+              iso2: c.cca2,
+              name: c.name!.common!,
+              dialCode: `${c.idd!.root!}${suffix}`,
+              shortName: c.cca3 ?? c.cca2,
+            }));
+          })
+          .sort((a, b) => a.name.localeCompare(b.name));
+        if (opts.length > 0) setCountryOptions(opts);
+      })
+      .catch((err) => {
+        console.warn("[Optify] Failed to load full country calling code list:", err);
+      });
+    return () => controller.abort();
+  }, []);
 
   function setField<K extends keyof FormState>(key: K, v: FormState[K]) {
     setValues((s) => ({ ...s, [key]: v }));
@@ -345,8 +409,14 @@ function IntakePage() {
                                   key={m}
                                   type="button"
                                   onClick={() => {
-                                    setField("preferredContactMethod", m);
-                                    setField("contactDetail", "");
+                                    setValues((s) => ({
+                                      ...s,
+                                      preferredContactMethod: m,
+                                      contactDetail: "",
+                                      phoneNationalNumber: "",
+                                      selectedPhoneCountry: DEFAULT_PHONE_COUNTRY,
+                                    }));
+                                    setFieldError(null);
                                   }}
                                   className={`tactile px-4 py-3.5 rounded-2xl border text-[15px] transition-all ${
                                     selected
@@ -360,7 +430,9 @@ function IntakePage() {
                             })}
                           </div>
 
-                          {values.preferredContactMethod && (
+                          {values.preferredContactMethod &&
+                            values.preferredContactMethod !== "WhatsApp" &&
+                            values.preferredContactMethod !== "Phone Call" && (
                             <div className="mt-4">
                               <TextField
                                 id="contactDetail"
@@ -385,6 +457,28 @@ function IntakePage() {
                                     ? "tel"
                                     : "off"
                                 }
+                              />
+                            </div>
+                          )}
+
+                          {(values.preferredContactMethod === "WhatsApp" ||
+                            values.preferredContactMethod === "Phone Call") && (
+                            <div className="mt-4">
+                              <InternationalPhoneField
+                                id="contactPhone"
+                                label={contactLabel(values.preferredContactMethod)}
+                                countries={countryOptions}
+                                selectedCountry={values.selectedPhoneCountry}
+                                nationalNumber={values.phoneNationalNumber}
+                                onChange={(next) => {
+                                  setValues((s) => ({
+                                    ...s,
+                                    selectedPhoneCountry: next.countryIso2,
+                                    phoneNationalNumber: next.localNumber,
+                                    contactDetail: next.e164,
+                                  }));
+                                  setFieldError(null);
+                                }}
                               />
                             </div>
                           )}
@@ -572,8 +666,10 @@ function stepError(step: number, v: FormState): string | null {
       const m = v.preferredContactMethod;
       const val = v.contactDetail.trim();
       if (val.length < 2) return "Enter your contact detail";
-      if ((m === "WhatsApp" || m === "Phone Call") && !phoneRegex.test(val))
-        return "Enter a valid phone number";
+      if (m === "WhatsApp" || m === "Phone Call") {
+        if (!v.selectedPhoneCountry) return "Select a country/region code";
+        if (!isReasonablyValidInternationalPhone(val)) return "Enter a valid phone number";
+      }
       if (m === "Email" && !z.string().email().safeParse(val).success)
         return "Enter a valid email";
       if (m === "Instagram" && !handleRegex.test(val))
@@ -597,11 +693,39 @@ function contactLabel(m: ContactMethod) {
 }
 function contactPlaceholder(m: ContactMethod) {
   switch (m) {
-    case "WhatsApp": return "+91 98xxx xxxxx";
-    case "Phone Call": return "+91 98xxx xxxxx";
+    case "WhatsApp": return "98xxx xxxxx";
+    case "Phone Call": return "98xxx xxxxx";
     case "Email": return "you@brand.com";
     case "Instagram": return "@yourbrand";
   }
+}
+
+function normalizePhoneDigits(raw: string) {
+  return raw.replace(/[^\d]/g, "");
+}
+
+function composeE164(dialCode: string, localNumber: string) {
+  const normalizedDialCode = dialCode.startsWith("+") ? dialCode : `+${dialCode}`;
+  const localDigits = normalizePhoneDigits(localNumber);
+  return `${normalizedDialCode}${localDigits}`;
+}
+
+function isReasonablyValidInternationalPhone(value: string) {
+  if (!/^\+\d{8,15}$/.test(value)) return false;
+  return !/^(\+\d)\1+$/.test(value);
+}
+
+function countryFlag(iso2: string) {
+  if (!/^[A-Z]{2}$/.test(iso2)) return "🏳️";
+  return String.fromCodePoint(...iso2.split("").map((char) => 127397 + char.charCodeAt(0)));
+}
+
+const COUNTRY_SHORT_LABEL_OVERRIDES: Record<string, string> = {
+  SA: "KSA",
+};
+
+function countryShortLabel(country: CountryOption) {
+  return COUNTRY_SHORT_LABEL_OVERRIDES[country.iso2] ?? country.shortName;
 }
 
 function StackBackdrop({ step, total }: { step: number; total: number }) {
@@ -681,6 +805,107 @@ function TextField({
         placeholder={placeholder}
         className="mt-1 w-full bg-transparent outline-none text-base sm:text-lg placeholder:text-foreground/30 tracking-tight"
       />
+    </div>
+  );
+}
+
+function InternationalPhoneField({
+  id,
+  label,
+  countries,
+  selectedCountry,
+  nationalNumber,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  countries: CountryOption[];
+  selectedCountry: string;
+  nationalNumber: string;
+  onChange: (next: { countryIso2: string; localNumber: string; e164: string }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeCountry =
+    countries.find((c) => c.iso2 === selectedCountry) ??
+    countries.find((c) => c.iso2 === DEFAULT_PHONE_COUNTRY) ??
+    countries[0];
+  const triggerLabel = activeCountry
+    ? `${countryShortLabel(activeCountry)} (${activeCountry.dialCode})`
+    : "Select country";
+
+  return (
+    <div className="reactive-focus relative rounded-2xl border border-border bg-background/60 px-5 pt-3 pb-3.5">
+      <label htmlFor={id} className="label-micro">
+        {label}
+      </label>
+      <div className="mt-1 flex items-center gap-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="tactile inline-flex min-w-0 max-w-[58%] items-center gap-2 rounded-xl border border-border bg-background/70 px-3 py-2 text-sm hover:bg-background focus:outline-none focus-visible:shadow-[var(--bloom-focus)]"
+              aria-label="Select country code"
+            >
+              {activeCountry && <span aria-hidden>{countryFlag(activeCountry.iso2)}</span>}
+              <span className="truncate">{triggerLabel}</span>
+              <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[320px] p-0">
+            <Command>
+              <CommandInput placeholder="Search country or code..." />
+              <CommandList>
+                <CommandEmpty>No country found.</CommandEmpty>
+                {countries.map((country) => (
+                  <CommandItem
+                    key={`${country.iso2}-${country.dialCode}`}
+                    value={`${country.name} ${countryShortLabel(country)} ${country.dialCode} ${country.iso2}`}
+                    onSelect={() => {
+                      const e164 = composeE164(country.dialCode, nationalNumber);
+                      onChange({
+                        countryIso2: country.iso2,
+                        localNumber: nationalNumber,
+                        e164,
+                      });
+                      setOpen(false);
+                    }}
+                    className="justify-between"
+                  >
+                    <span className="inline-flex min-w-0 items-center gap-2 truncate">
+                      <span aria-hidden>{countryFlag(country.iso2)}</span>
+                      <span className="truncate">{countryShortLabel(country)}</span>
+                    </span>
+                    <span className="ml-2 inline-flex items-center gap-2 text-muted-foreground">
+                      {country.dialCode}
+                      {selectedCountry === country.iso2 && <Check className="h-4 w-4 text-primary" />}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
+        <input
+          id={id}
+          name={id}
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel-national"
+          value={nationalNumber}
+          onChange={(e) => {
+            const nextLocalNumber = e.target.value;
+            const e164 = activeCountry ? composeE164(activeCountry.dialCode, nextLocalNumber) : "";
+            onChange({
+              countryIso2: activeCountry?.iso2 ?? "",
+              localNumber: nextLocalNumber,
+              e164,
+            });
+          }}
+          placeholder="Phone number"
+          className="min-w-0 flex-1 bg-transparent outline-none text-base sm:text-lg placeholder:text-foreground/30 tracking-tight"
+        />
+      </div>
     </div>
   );
 }

@@ -97,6 +97,12 @@
 }
 
 @layer base {
+  *,
+  *::before,
+  *::after {
+    font-family: "Exo 2", sans-serif !important;
+  }
+
   * {
     border-color: var(--color-border);
   }

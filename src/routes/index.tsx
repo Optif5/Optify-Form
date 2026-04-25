@@ -706,6 +706,11 @@ function isReasonablyValidInternationalPhone(value: string) {
   return !/^(\+\d)\1+$/.test(value);
 }
 
+function countryFlag(iso2: string) {
+  if (!/^[A-Z]{2}$/.test(iso2)) return "🏳️";
+  return String.fromCodePoint(...iso2.split("").map((char) => 127397 + char.charCodeAt(0)));
+}
+
 function StackBackdrop({ step, total }: { step: number; total: number }) {
   const remaining = Math.max(0, total - step - 1);
   const ghosts = Math.min(2, remaining);
@@ -821,6 +826,7 @@ function InternationalPhoneField({
               className="tactile inline-flex min-w-0 max-w-[58%] items-center gap-2 rounded-xl border border-border bg-background/70 px-3 py-2 text-sm hover:bg-background focus:outline-none focus-visible:shadow-[var(--bloom-focus)]"
               aria-label="Select country code"
             >
+              {activeCountry && <span aria-hidden>{countryFlag(activeCountry.iso2)}</span>}
               <span className="truncate">{triggerLabel}</span>
               <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
             </button>
@@ -845,7 +851,10 @@ function InternationalPhoneField({
                     }}
                     className="justify-between"
                   >
-                    <span className="truncate">{country.name}</span>
+                    <span className="inline-flex min-w-0 items-center gap-2 truncate">
+                      <span aria-hidden>{countryFlag(country.iso2)}</span>
+                      <span className="truncate">{country.name}</span>
+                    </span>
                     <span className="ml-2 inline-flex items-center gap-2 text-muted-foreground">
                       {country.dialCode}
                       {selectedCountry === country.iso2 && <Check className="h-4 w-4 text-primary" />}

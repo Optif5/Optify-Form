@@ -85,6 +85,8 @@ type FormState = {
   contactDetail: string;
 };
 
+const DEFAULT_PHONE_COUNTRY = "SA";
+
 const EMPTY: FormState = {
   fullName: "",
   restaurantName: "",
@@ -93,7 +95,7 @@ const EMPTY: FormState = {
   challenges: [],
   otherChallenge: "",
   preferredContactMethod: "",
-  selectedPhoneCountry: "",
+  selectedPhoneCountry: DEFAULT_PHONE_COUNTRY,
   phoneNationalNumber: "",
   contactDetail: "",
 };
@@ -412,7 +414,7 @@ function IntakePage() {
                                       preferredContactMethod: m,
                                       contactDetail: "",
                                       phoneNationalNumber: "",
-                                      selectedPhoneCountry: "",
+                                      selectedPhoneCountry: DEFAULT_PHONE_COUNTRY,
                                     }));
                                     setFieldError(null);
                                   }}
@@ -823,7 +825,10 @@ function InternationalPhoneField({
   onChange: (next: { countryIso2: string; localNumber: string; e164: string }) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const activeCountry = countries.find((c) => c.iso2 === selectedCountry) ?? countries[0];
+  const activeCountry =
+    countries.find((c) => c.iso2 === selectedCountry) ??
+    countries.find((c) => c.iso2 === DEFAULT_PHONE_COUNTRY) ??
+    countries[0];
   const triggerLabel = activeCountry
     ? `${countryShortLabel(activeCountry)} (${activeCountry.dialCode})`
     : "Select country";

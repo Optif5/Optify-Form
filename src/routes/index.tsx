@@ -711,6 +711,15 @@ function countryFlag(iso2: string) {
   return String.fromCodePoint(...iso2.split("").map((char) => 127397 + char.charCodeAt(0)));
 }
 
+const COUNTRY_SHORT_LABELS: Record<string, string> = {
+  IN: "IND",
+  SA: "KSA",
+};
+
+function countryShortLabel(country: CountryOption) {
+  return COUNTRY_SHORT_LABELS[country.iso2] ?? country.name;
+}
+
 function StackBackdrop({ step, total }: { step: number; total: number }) {
   const remaining = Math.max(0, total - step - 1);
   const ghosts = Math.min(2, remaining);
@@ -810,7 +819,7 @@ function InternationalPhoneField({
   const [open, setOpen] = useState(false);
   const activeCountry = countries.find((c) => c.iso2 === selectedCountry) ?? countries[0];
   const triggerLabel = activeCountry
-    ? `${activeCountry.name} (${activeCountry.dialCode})`
+    ? `${countryShortLabel(activeCountry)} (${activeCountry.dialCode})`
     : "Select country";
 
   return (
@@ -839,7 +848,7 @@ function InternationalPhoneField({
                 {countries.map((country) => (
                   <CommandItem
                     key={`${country.iso2}-${country.dialCode}`}
-                    value={`${country.name} ${country.dialCode} ${country.iso2}`}
+                    value={`${country.name} ${countryShortLabel(country)} ${country.dialCode} ${country.iso2}`}
                     onSelect={() => {
                       const e164 = composeE164(country.dialCode, nationalNumber);
                       onChange({
@@ -853,7 +862,7 @@ function InternationalPhoneField({
                   >
                     <span className="inline-flex min-w-0 items-center gap-2 truncate">
                       <span aria-hidden>{countryFlag(country.iso2)}</span>
-                      <span className="truncate">{country.name}</span>
+                      <span className="truncate">{countryShortLabel(country)}</span>
                     </span>
                     <span className="ml-2 inline-flex items-center gap-2 text-muted-foreground">
                       {country.dialCode}

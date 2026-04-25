@@ -545,7 +545,7 @@ function IntakePage() {
                               </>
                             ) : (
                               <>
-                                Submit assessment
+                                Submit
                                 <svg width="16" height="10" viewBox="0 0 18 10" fill="none" aria-hidden>
                                   <path
                                     d="M1 5h15m0 0L12 1m4 4l-4 4"

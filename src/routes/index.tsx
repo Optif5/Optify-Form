@@ -69,6 +69,7 @@ type CountryOption = {
   iso2: string;
   name: string;
   dialCode: string;
+  shortName: string;
 };
 
 type FormState = {
@@ -98,9 +99,9 @@ const EMPTY: FormState = {
 };
 
 const FALLBACK_COUNTRIES: CountryOption[] = [
-  { iso2: "US", name: "United States", dialCode: "+1" },
-  { iso2: "GB", name: "United Kingdom", dialCode: "+44" },
-  { iso2: "SA", name: "Saudi Arabia", dialCode: "+966" },
+  { iso2: "US", name: "United States", dialCode: "+1", shortName: "USA" },
+  { iso2: "GB", name: "United Kingdom", dialCode: "+44", shortName: "UK" },
+  { iso2: "SA", name: "Saudi Arabia", dialCode: "+966", shortName: "KSA" },
 ];
 
 const TOTAL_STEPS = 5;
@@ -117,13 +118,18 @@ function IntakePage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("https://restcountries.com/v3.1/all?fields=name,idd,cca2", {
+    fetch("https://restcountries.com/v3.1/all?fields=name,idd,cca2,cca3", {
       signal: controller.signal,
     })
       .then((res) => {
         if (!res.ok) throw new Error("Country list request failed");
         return res.json() as Promise<
-          { cca2?: string; name?: { common?: string }; idd?: { root?: string; suffixes?: string[] } }[]
+          {
+            cca2?: string;
+            cca3?: string;
+            name?: { common?: string };
+            idd?: { root?: string; suffixes?: string[] };
+          }[]
         >;
       })
       .then((rows) => {
@@ -134,6 +140,7 @@ function IntakePage() {
               iso2: c.cca2,
               name: c.name!.common!,
               dialCode: `${c.idd!.root!}${suffix}`,
+              shortName: c.cca3 ?? c.cca2,
             }));
           })
           .sort((a, b) => a.name.localeCompare(b.name));
@@ -711,13 +718,12 @@ function countryFlag(iso2: string) {
   return String.fromCodePoint(...iso2.split("").map((char) => 127397 + char.charCodeAt(0)));
 }
 
-const COUNTRY_SHORT_LABELS: Record<string, string> = {
-  IN: "IND",
+const COUNTRY_SHORT_LABEL_OVERRIDES: Record<string, string> = {
   SA: "KSA",
 };
 
 function countryShortLabel(country: CountryOption) {
-  return COUNTRY_SHORT_LABELS[country.iso2] ?? country.name;
+  return COUNTRY_SHORT_LABEL_OVERRIDES[country.iso2] ?? country.shortName;
 }
 
 function StackBackdrop({ step, total }: { step: number; total: number }) {

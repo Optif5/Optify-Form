@@ -1,0 +1,203 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * OPTIFY V3.2 — Reactive futuristic premium interface system.
+ * Tokens are atmospheric, light-based, controlled.
+ * NEVER author ad-hoc colors in components — only use these tokens.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: "Exo 2", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-active: var(--primary-active);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-deep: var(--deep);
+  --color-glow: var(--glow);
+  --color-fog: var(--fog);
+}
+
+:root {
+  --radius: 0.25rem;
+
+  /* Optify primary palette */
+  --background: oklch(0.957 0.018 84);          /* #f6efe6 base */
+  --foreground: oklch(0.196 0.006 40);          /* #1e1b1a primary text */
+  --surface: oklch(0.910 0.026 84);             /* #e8dfc8 secondary surface */
+  --surface-foreground: oklch(0.196 0.006 40);
+
+  --card: oklch(0.957 0.018 84);
+  --card-foreground: oklch(0.196 0.006 40);
+  --popover: oklch(0.957 0.018 84);
+  --popover-foreground: oklch(0.196 0.006 40);
+
+  --primary: oklch(0.376 0.084 19);             /* #6f2c35 burgundy */
+  --primary-foreground: oklch(0.957 0.018 84);
+  --primary-active: oklch(0.328 0.080 19);      /* #5a232b */
+
+  --secondary: oklch(0.910 0.026 84);
+  --secondary-foreground: oklch(0.196 0.006 40);
+  --muted: oklch(0.910 0.026 84);
+  --muted-foreground: oklch(0.196 0.006 40 / 0.55);
+
+  --accent: oklch(0.376 0.084 19 / 0.08);
+  --accent-foreground: oklch(0.376 0.084 19);
+
+  --success: oklch(0.66 0.17 145);              /* #33b24e */
+  --success-foreground: oklch(0.957 0.018 84);
+
+  --destructive: oklch(0.577 0.245 27);
+  --destructive-foreground: oklch(0.984 0.003 247);
+
+  --border: oklch(0.196 0.006 40 / 0.12);
+  --input: oklch(0.196 0.006 40 / 0.18);
+  --ring: oklch(0.376 0.084 19 / 0.45);
+
+  /* Atmospheric */
+  --deep: oklch(0.196 0.006 40);                /* deep atmosphere */
+  --glow: oklch(0.376 0.084 19 / 0.12);         /* burgundy glow tint */
+  --fog: oklch(0.910 0.026 84 / 0.20);          /* neutral fog */
+
+  /* Shadows — light bloom, not drop shadows */
+  --bloom-soft: 0 0 0 1px oklch(0.376 0.084 19 / 0.06), 0 12px 40px -12px oklch(0.376 0.084 19 / 0.18);
+  --bloom-focus: 0 0 0 1px oklch(0.376 0.084 19 / 0.35), 0 0 28px -4px oklch(0.376 0.084 19 / 0.28);
+  --halo: 0 0 0 6px oklch(0.376 0.084 19 / 0.10);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html, body, #root {
+    min-height: 100%;
+    background-color: #f6efe6;
+    color: var(--color-foreground);
+    font-family: "Exo 2", sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    background-color: #f6efe6;
+  }
+
+  body, button, input, textarea, select, optgroup, h1, h2, h3, h4, h5, h6, label, p, span, div, a {
+    font-family: "Exo 2", sans-serif;
+  }
+
+  ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  /* Optify micro label */
+  .label-micro {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: oklch(0.196 0.006 40 / 0.55);
+  }
+
+  /* Echo / outlined typography */
+  .echo-text {
+    color: transparent;
+    -webkit-text-stroke: 1px oklch(0.376 0.084 19 / 0.18);
+  }
+
+  /* Reactive focus halo */
+  .reactive-focus {
+    transition: box-shadow 380ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 380ms cubic-bezier(0.22, 1, 0.36, 1),
+                background-color 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reactive-focus:focus-within {
+    box-shadow: var(--bloom-focus);
+  }
+
+  /* Tactile submersion button */
+  .tactile {
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+                background-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .tactile:hover { box-shadow: var(--bloom-soft); }
+  .tactile:active { transform: translateY(1px) scale(0.997); background-color: var(--primary-active); }
+
+  /* Idle pulse for CTA */
+  @keyframes optify-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 oklch(0.376 0.084 19 / 0.0); }
+    50%      { box-shadow: 0 0 0 8px oklch(0.376 0.084 19 / 0.08); }
+  }
+  .idle-pulse { animation: optify-pulse 4.8s ease-in-out infinite; }
+
+  /* Constriction-on-load entry */
+  @keyframes optify-enter {
+    0%   { opacity: 0; transform: translateY(8px) scale(0.985); filter: blur(6px); }
+    100% { opacity: 1; transform: none; filter: blur(0); }
+  }
+  .enter { animation: optify-enter 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .enter-1 { animation-delay: 80ms; }
+  .enter-2 { animation-delay: 200ms; }
+  .enter-3 { animation-delay: 340ms; }
+  .enter-4 { animation-delay: 480ms; }
+  .enter-5 { animation-delay: 620ms; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .enter, .idle-pulse { animation: none !important; }
+  }
+
+  /* Bathymetric contour background */
+  .contour-bg {
+    background-image:
+      radial-gradient(1200px 600px at 85% 20%, oklch(0.376 0.084 19 / 0.10), transparent 60%),
+      radial-gradient(900px 500px at 10% 90%, oklch(0.910 0.026 84 / 0.55), transparent 60%),
+      repeating-radial-gradient(circle at 70% 30%,
+        oklch(0.196 0.006 40 / 0.035) 0 1px,
+        transparent 1px 90px);
+  }
+
+  /* Horizon line */
+  .horizon::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, oklch(0.196 0.006 40 / 0.18), transparent);
+    pointer-events: none;
+  }
+}

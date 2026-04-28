@@ -721,6 +721,7 @@ function countryFlag(iso2: string) {
 }
 
 const COUNTRY_SHORT_LABEL_OVERRIDES: Record<string, string> = {
+  AE: "UAE",
   SA: "KSA",
 };
 
